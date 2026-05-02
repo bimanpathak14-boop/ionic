@@ -38,6 +38,7 @@ import templateRoutes from './routes/templates.js';
 // WebSocket & Telegram
 import { initializeWebSocket } from './websocket/index.js';
 import { initializeTelegram } from './services/telegramService.js';
+import { startKeepAlive } from './services/keepAlive.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -99,21 +100,32 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ============ Initialize WebSocket ============
+// ============ Initialize WebSocket & Telegram ============
 initializeWebSocket(io);
+
+// Start Telegram Bot early to register webhooks
+let botInstance;
+try {
+  console.log('🤖 Initializing Telegram Bot...');
+  botInstance = initializeTelegram(io);
+  if (botInstance && botInstance.webhookPath) {
+    app.use(botInstance.webhookCallback(botInstance.webhookPath));
+  }
+} catch (err) {
+  console.error('❌ Error initializing Telegram:', err);
+}
 
 // ============ Start Server ============
 httpServer.listen(PORT, () => {
   console.log(`\n🚀 Pocket AI Office Backend running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   
-  // Start Telegram Bot
-  console.log('🤖 Attempting to start Telegram Bot...');
-  try {
-    initializeTelegram(io);
-  } catch (err) {
-    console.error('❌ Error initializing Telegram:', err);
+  if (botInstance && botInstance.webhookPath) {
+    console.log(`🔗 Webhook route registered at ${botInstance.webhookPath}`);
   }
+
+  // Start Keep-Alive (Prevent Render Sleep)
+  startKeepAlive();
   
   console.log(`   WS:     ws://localhost:${PORT}\n`);
 });

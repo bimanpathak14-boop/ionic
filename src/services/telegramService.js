@@ -80,9 +80,10 @@ export const initializeTelegram = (io) => {
         expiresAt,
       });
 
+      const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
       const message = `✨ *Laptop Connection Details*\n\n` +
         `1. Open Desktop App on Laptop\n` +
-        `2. Ensure Server URL is: \`https://ionic-04b0.onrender.com\`\n\n` +
+        `2. Ensure Server URL is: \`${serverUrl}\`\n\n` +
         `*Auth Token:* (Copy & Paste this)\n\`${token}\`\n\n` +
         `*Pairing Code:* \`${code}\`\n\n` +
         `_Note: Code expires in 10 minutes._`;
@@ -167,11 +168,22 @@ export const initializeTelegram = (io) => {
     }
   });
 
-  bot.launch().then(() => {
-    console.log('🤖 Pocket AI Bot is now fully LIVE and listening!');
-  }).catch(err => {
-    console.error('❌ Failed to launch Telegram Bot:', err);
-  });
+  // Webhook Configuration for Render (Instant Wake-up)
+  const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
+  const webhookPath = `/telegraf/${crypto.randomBytes(16).toString('hex')}`;
+  
+  if (process.env.NODE_ENV === 'production') {
+    bot.telegram.setWebhook(`${serverUrl}${webhookPath}`).then(() => {
+      console.log(`🤖 Telegram Webhook set to: ${serverUrl}${webhookPath}`);
+    });
+  } else {
+    bot.launch().then(() => {
+      console.log('🤖 Telegram Bot started in Polling mode (Development)');
+    });
+  }
+
+  // Export the secret path so index.js can use it
+  bot.webhookPath = webhookPath;
 
   // Enable graceful stop
   process.once('SIGINT', () => bot.stop('SIGINT'));
