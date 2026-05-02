@@ -1,8 +1,10 @@
 import pkg from 'telegraf';
 const { Telegraf } = pkg;
 import { db } from '../db/index.js';
-import { chatMessages, tasks, devices, users } from '../db/schema.js';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, gt } from 'drizzle-orm';
+import { pairingCodes, chatMessages, tasks, devices, users } from '../db/schema.js';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { processChat } from './aiService.js';
 
 const SENSITIVE_PATTERNS = [
@@ -49,7 +51,47 @@ export const initializeTelegram = (io) => {
   });
 
   bot.start((ctx) => {
-    ctx.reply('Welcome to Pocket AI! I am your PC Remote Controller. Send me any command to get started.');
+    ctx.reply('Welcome to Pocket AI! I am your PC Remote Controller.\n\nCommands:\n/pair - Get code to connect your Laptop\nSend any message to control your PC.');
+  });
+
+  // Help user pair their laptop easily
+  bot.command('pair', async (ctx) => {
+    try {
+      // 1. Get/Create Admin User
+      let user = await db.query.users.findFirst();
+      if (!user) {
+        [user] = await db.insert(users).values({
+          email: 'admin@pocket-ai.local',
+          passwordHash: 'dummy',
+          name: 'Pocket AI Admin',
+        }).returning();
+      }
+
+      // 2. Generate Token
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me', { expiresIn: '30d' });
+
+      // 3. Generate Pairing Code
+      const code = crypto.randomInt(100000, 999999).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins
+
+      await db.insert(pairingCodes).values({
+        userId: user.id,
+        code,
+        expiresAt,
+      });
+
+      const message = `✨ *Laptop Connection Details*\n\n` +
+        `1. Open Desktop App on Laptop\n` +
+        `2. Ensure Server URL is: \`https://ionic-04b0.onrender.com\`\n\n` +
+        `*Auth Token:* (Copy & Paste this)\n\`${token}\`\n\n` +
+        `*Pairing Code:* \`${code}\`\n\n` +
+        `_Note: Code expires in 10 minutes._`;
+
+      ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Pair command error:', error);
+      ctx.reply('Failed to generate pairing details. Please check logs.');
+    }
   });
 
   bot.on('text', async (ctx) => {
