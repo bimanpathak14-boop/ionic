@@ -176,7 +176,8 @@ export const initializeTelegram = (io) => {
 
   // Webhook Configuration for Render (Instant Wake-up)
   const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
-  const webhookPath = `/telegraf/${crypto.randomBytes(16).toString('hex')}`;
+  // Use a fixed path or hash of token so it doesn't change on restart
+  const webhookPath = `/telegraf/webhook_${token.slice(-8)}`; 
   
   if (process.env.NODE_ENV === 'production') {
     bot.telegram.setWebhook(`${serverUrl}${webhookPath}`).then(() => {
