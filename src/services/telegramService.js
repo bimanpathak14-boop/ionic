@@ -43,7 +43,13 @@ export const initializeTelegram = (io) => {
     const userId = ctx.from?.id.toString();
     console.log(`📥 Received message from Telegram ID: ${userId}`);
 
-    if (authorizedId && userId !== authorizedId) {
+    // If placeholder or empty, allow for testing
+    if (!authorizedId || authorizedId === 'your_telegram_id_here' || authorizedId === 'your_authorized_user_id') {
+      console.log(`⚠️ WARNING: Bot is in PUBLIC mode because TELEGRAM_AUTHORIZED_USER_ID is not set.`);
+      return next();
+    }
+
+    if (userId !== authorizedId) {
       console.log(`🚫 Unauthorized access attempt from: ${userId} (Expected: ${authorizedId})`);
       return ctx.reply('Sorry, you are not authorized to use this bot.');
     }
