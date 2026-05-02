@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: pocket-ai-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false # Set this in Render Dashboard
+      - key: GROQ_API_KEY
+        sync: false # Set this in Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true # Render will generate a random secret for you
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pocket-ai-redis
+          property: connectionString
+
+  - type: redis
+    name: pocket-ai-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections
