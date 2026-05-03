@@ -103,14 +103,10 @@ app.use((err, req, res, next) => {
 // ============ Initialize WebSocket & Telegram ============
 initializeWebSocket(io);
 
-// Start Telegram Bot early to register webhooks
-let botInstance;
+// Start Telegram Bot early
 try {
   console.log('🤖 Initializing Telegram Bot...');
-  botInstance = initializeTelegram(io);
-  if (botInstance && botInstance.webhookPath) {
-    app.use(botInstance.webhookCallback(botInstance.webhookPath));
-  }
+  initializeTelegram(io);
 } catch (err) {
   console.error('❌ Error initializing Telegram:', err);
 }
@@ -119,10 +115,6 @@ try {
 httpServer.listen(PORT, () => {
   console.log(`\n🚀 Pocket AI Office Backend running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
-  
-  if (botInstance && botInstance.webhookPath) {
-    console.log(`🔗 Webhook route registered at ${botInstance.webhookPath}`);
-  }
 
   // Start Keep-Alive (Prevent Render Sleep)
   startKeepAlive();

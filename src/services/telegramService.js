@@ -115,7 +115,7 @@ export const initializeTelegram = (io) => {
       // 1. Get/Create User
       let user;
       try {
-        user = await db.query.users.findFirst(); 
+        user = await db.query.users.findFirst();
       } catch (dbErr) {
         console.error('❌ Database connection error:', dbErr);
         return ctx.reply('⚠️ Database connection failed. Please check if your Neon DB is active.');
@@ -137,7 +137,7 @@ export const initializeTelegram = (io) => {
 
       // ... rest of the logic ...
       // (I'll keep the rest as is but wrapped in the outer try-catch)
-      
+
       const history = await db.select().from(chatMessages)
         .where(eq(chatMessages.userId, user.id))
         .orderBy(desc(chatMessages.createdAt)).limit(10);
@@ -193,23 +193,12 @@ export const initializeTelegram = (io) => {
     }
   });
 
-  // Webhook Configuration for Render (Instant Wake-up)
-  const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
-  // Use a fixed path or hash of token so it doesn't change on restart
-  const webhookPath = `/telegraf/webhook_${token.slice(-8)}`; 
-  
-  if (process.env.NODE_ENV === 'production') {
-    bot.telegram.setWebhook(`${serverUrl}${webhookPath}`).then(() => {
-      console.log(`🤖 Telegram Webhook set to: ${serverUrl}${webhookPath}`);
-    });
-  } else {
-    bot.launch().then(() => {
-      console.log('🤖 Telegram Bot started in Polling mode (Development)');
-    });
-  }
-
-  // Export the secret path so index.js can use it
-  bot.webhookPath = webhookPath;
+  // Use Polling for better reliability during troubleshooting
+  bot.launch().then(() => {
+    console.log('🤖 Pocket AI Bot is now LIVE in Polling mode!');
+  }).catch(err => {
+    console.error('❌ Failed to launch Telegram Bot:', err);
+  });
 
   // Enable graceful stop
   process.once('SIGINT', () => bot.stop('SIGINT'));
