@@ -39,6 +39,19 @@ class ExcelHandler:
                 for col_idx, value in enumerate(row_data, 1):
                     ws.cell(row=row_idx, column=col_idx, value=value)
 
+        # Auto-size columns based on ALL data
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter # Get the column name
+            for cell in col:
+                try: # Necessary to avoid error on empty cells
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2
+            ws.column_dimensions[column].width = max(adjusted_width, 12)
+
         # Add formulas
         if formulas:
             for formula in formulas:

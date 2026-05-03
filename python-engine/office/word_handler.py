@@ -86,6 +86,8 @@ class WordHandler:
                     doc.add_heading(op.get('text', ''), level=op.get('level', 1))
                 elif op_type == 'replace':
                     self._replace_text(doc, op.get('find', ''), op.get('replace', ''))
+                elif op_type == 'add_image':
+                    self._add_image(doc, op.get('image_path', ''), width=op.get('width', 6))
 
         doc.save(path)
         
@@ -96,6 +98,17 @@ class WordHandler:
             pass
 
         return {'data': {'message': f'Document edited', 'path': path}}
+
+    def add_image(self, path='', image_path='', width=6, **kwargs):
+        """Specifically add an image to a document"""
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'Document not found: {path}')
+        
+        doc = Document(path)
+        self._add_image(doc, image_path, width)
+        doc.save(path)
+        
+        return {'data': {'message': 'Image added to document', 'path': path}}
 
     def export_pdf(self, path='', **kwargs):
         """Export document info (actual PDF conversion needs LibreOffice)"""
@@ -122,6 +135,11 @@ class WordHandler:
                 for run in para.runs:
                     if find in run.text:
                         run.text = run.text.replace(find, replace)
+
+    def _add_image(self, doc, image_path, width=6):
+        if not image_path or not os.path.exists(image_path):
+            return
+        doc.add_picture(image_path, width=Inches(width))
 
     def _safe_filename(self, name):
         return "".join(c for c in name if c.isalnum() or c in (' ', '-', '_')).strip()

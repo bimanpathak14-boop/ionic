@@ -193,6 +193,87 @@ class SystemHandler:
             }
         }
 
+    def media_control(self, action='playpause', **kwargs):
+        """Control media playback (play, pause, volume, etc.)"""
+        actions = {
+            'playpause': 'playpause',
+            'next': 'nexttrack',
+            'prev': 'prevtrack',
+            'volup': 'volumeup',
+            'voldown': 'volumedown',
+            'mute': 'volumemute',
+            'stop': 'stop',
+        }
+        
+        target = actions.get(action.lower())
+        if target:
+            pyautogui.press(target)
+            return {'data': {'message': f'Media action: {action}'}}
+        return {'data': {'error': f'Unknown media action: {action}'}}
+
+    def get_clipboard(self, **kwargs):
+        """Get current clipboard text"""
+        try:
+            import ctypes
+            CF_UNICODETEXT = 13
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
+            if user32.OpenClipboard(0):
+                h_data = user32.GetClipboardData(CF_UNICODETEXT)
+                if h_data:
+                    p_data = kernel32.GlobalLock(h_data)
+                    text = ctypes.wstring_at(p_data)
+                    kernel32.GlobalUnlock(h_data)
+                    user32.CloseClipboard()
+                    return {'data': {'text': text}}
+                user32.CloseClipboard()
+            return {'data': {'text': ''}}
+        except Exception as e:
+            return {'data': {'error': str(e)}}
+
+    def set_clipboard(self, text='', **kwargs):
+        """Set clipboard text"""
+        try:
+            import ctypes
+            CF_UNICODETEXT = 13
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
+            text_bytes = text.encode('utf-16le') + b'\x00\x00'
+            h_mem = kernel32.GlobalAlloc(0x0042, len(text_bytes))
+            p_mem = kernel32.GlobalLock(h_mem)
+            ctypes.memmove(p_mem, text_bytes, len(text_bytes))
+            kernel32.GlobalUnlock(h_mem)
+
+            if user32.OpenClipboard(0):
+                user32.EmptyClipboard()
+                user32.SetClipboardData(CF_UNICODETEXT, h_mem)
+                user32.CloseClipboard()
+                return {'data': {'message': 'Clipboard updated'}}
+            return {'data': {'error': 'Could not open clipboard'}}
+        except Exception as e:
+            return {'data': {'error': str(e)}}
+
+    def run_terminal(self, command='', **kwargs):
+        """Run a command in CMD/Terminal and return output"""
+        try:
+            # On Windows, we use cmd /c
+            if platform.system() == 'Windows':
+                result = subprocess.run(f'cmd /c "{command}"', shell=True, capture_output=True, text=True, timeout=30)
+            else:
+                result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+            
+            return {
+                'data': {
+                    'stdout': result.stdout[:5000],
+                    'stderr': result.stderr[:2000],
+                    'exit_code': result.returncode
+                }
+            }
+        except Exception as e:
+            return {'data': {'error': str(e)}}
+
     def cancel_task(self, taskId='', **kwargs):
         """Cancel a running task"""
         if taskId in self.running_tasks:

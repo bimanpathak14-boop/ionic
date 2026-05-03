@@ -66,35 +66,46 @@ class PowerPointHandler:
         self._set_slide_bg(slide, colors['bg'])
 
         heading = slide_data.get('heading', '')
+        subtitle = slide_data.get('subtitle', '')
         bullets = slide_data.get('bullets', [])
         content = slide_data.get('content', '')
 
         # Heading
         if heading:
-            txBox = slide.shapes.add_textbox(Inches(0.8), Inches(0.5), Inches(11.5), Inches(1.2))
+            txBox = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.5), Inches(1))
             tf = txBox.text_frame
             p = tf.paragraphs[0]
             p.text = heading
-            p.font.size = Pt(32)
+            p.font.size = Pt(36)
             p.font.bold = True
             p.font.color.rgb = colors['title']
 
+        # Subtitle (new)
+        if subtitle:
+            txBox = slide.shapes.add_textbox(Inches(0.8), Inches(1.3), Inches(11.5), Inches(0.5))
+            tf = txBox.text_frame
+            p = tf.paragraphs[0]
+            p.text = subtitle
+            p.font.size = Pt(22)
+            p.font.color.rgb = colors['subtitle']
+
         # Bullet points
         if bullets:
-            txBox = slide.shapes.add_textbox(Inches(1.2), Inches(2), Inches(10.5), Inches(4.5))
+            txBox = slide.shapes.add_textbox(Inches(1.2), Inches(2.2), Inches(10.5), Inches(4.5))
             tf = txBox.text_frame
             tf.word_wrap = True
 
             for i, bullet in enumerate(bullets):
                 p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-                p.text = f'• {bullet}'
+                p.text = f' {bullet}'
                 p.font.size = Pt(20)
                 p.font.color.rgb = colors['text']
                 p.space_after = Pt(12)
+                p.level = 0
 
         # Plain content
         elif content:
-            txBox = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(11), Inches(4.5))
+            txBox = slide.shapes.add_textbox(Inches(1.2), Inches(2.2), Inches(10.5), Inches(4.5))
             tf = txBox.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]

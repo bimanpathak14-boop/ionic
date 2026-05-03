@@ -29,6 +29,7 @@ class PocketAIEngine:
                 'create_spreadsheet': ExcelHandler().create,
                 'create_presentation': PowerPointHandler().create,
                 'export_pdf': WordHandler().export_pdf,
+                'add_image_to_doc': WordHandler().add_image,
             },
             'coding': {
                 'open_vscode': VSCodeHandler().open_vscode,
@@ -54,6 +55,10 @@ class PocketAIEngine:
                 'move_file': SystemHandler().move_file,
                 'delete_file': SystemHandler().delete_file,
                 'screenshot': SystemHandler().screenshot,
+                'media_control': SystemHandler().media_control,
+                'get_clipboard': SystemHandler().get_clipboard,
+                'set_clipboard': SystemHandler().set_clipboard,
+                'run_terminal': SystemHandler().run_terminal,
                 'cancel': SystemHandler().cancel_task,
                 'get_system_info': SystemHandler().get_system_info,
             },
