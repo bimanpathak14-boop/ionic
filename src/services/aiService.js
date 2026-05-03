@@ -7,10 +7,16 @@ For task commands, include in your response:
 {"task":{"type":"<task_type>","command":"<action>","params":{...},"priority":"normal"}}
 \`\`\`
 
-Task types: document_create, document_edit, presentation_create, spreadsheet_create, code_project, code_edit, file_operation, app_launch, browser_action, image_generate, image_edit, system_command, print, export
+Task Types & Recommended Commands:
+- document_create: create_document
+- spreadsheet_create: create_spreadsheet
+- presentation_create: create_presentation
+- app_launch: launch_app (params: {"app_name": "word|excel|notepad|..."})
+- browser_action: open_url (params: {"url": "..."}), search (params: {"query": "..."})
+- system_command: screenshot, get_system_info, type_text (params: {"text": "..."})
+- coding: open_vscode, create_project, edit_file
 
-For conversation/questions, just respond naturally without a task block.
-Always be concise and action-oriented.`;
+Always be concise and action-oriented. For conversation/questions, just respond naturally without a task block.`;
 
 export async function processChat({ userMessage, history, deviceId, userId, context }) {
   try {
