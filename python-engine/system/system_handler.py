@@ -10,9 +10,25 @@ import psutil
 import base64
 
 
+import pyautogui
+import time
+
 class SystemHandler:
     def __init__(self):
         self.running_tasks = {}
+        pyautogui.FAILSAFE = True
+
+    def type_text(self, text='', interval=0.05, press_enter=True, **kwargs):
+        """Type text into the active window"""
+        try:
+            # Short delay to let user switch window if needed (though bot usually launches app first)
+            time.sleep(1) 
+            pyautogui.write(text, interval=interval)
+            if press_enter:
+                pyautogui.press('enter')
+            return {'data': {'message': 'Typing completed'}}
+        except Exception as e:
+            return {'data': {'error': f'Typing failed: {str(e)}'}}
 
     def launch_app(self, app_name='', path=None, **kwargs):
         """Launch a desktop application"""

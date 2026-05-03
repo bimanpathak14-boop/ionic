@@ -24,6 +24,7 @@ class PocketAIEngine:
         self.handlers = {
             'office': {
                 'create_document': WordHandler().create,
+                'create_new_document': WordHandler().create, # Alias
                 'edit_document': WordHandler().edit,
                 'create_spreadsheet': ExcelHandler().create,
                 'create_presentation': PowerPointHandler().create,
@@ -44,6 +45,10 @@ class PocketAIEngine:
             },
             'system': {
                 'launch_app': SystemHandler().launch_app,
+                'launch_ms_word': lambda **kw: SystemHandler().launch_app(app_name='word'), # Alias
+                'open_ms_word': lambda **kw: SystemHandler().launch_app(app_name='word'), # Alias
+                'type_text': SystemHandler().type_text,
+                'type': SystemHandler().type_text, # Alias
                 'list_files': SystemHandler().list_files,
                 'create_folder': SystemHandler().create_folder,
                 'move_file': SystemHandler().move_file,
