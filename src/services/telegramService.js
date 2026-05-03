@@ -78,8 +78,8 @@ export const initializeTelegram = (io) => {
         }).returning();
       }
 
-      // 2. Generate Token
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me', { expiresIn: '30d' });
+      // 2. Generate Token (Fixed key to match auth middleware)
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me', { expiresIn: '30d' });
 
       // 3. Generate Pairing Code
       const code = crypto.randomInt(100000, 999999).toString();
