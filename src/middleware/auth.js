@@ -15,7 +15,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me');
 
     const [user] = await db
       .select({
@@ -55,7 +55,7 @@ export const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me');
       const [user] = await db
         .select({ id: users.id, email: users.email, name: users.name, planId: users.planId })
         .from(users)
@@ -92,7 +92,7 @@ export const requirePlan = (...allowedPlans) => {
  * Generate access + refresh tokens
  */
 export const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me', { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET || 'pocket_ai_refresh_key_456_change_me', { expiresIn: '7d' });
   return { accessToken, refreshToken, expiresIn: 900 };
 };
