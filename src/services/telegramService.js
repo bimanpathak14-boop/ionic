@@ -56,8 +56,13 @@ export const initializeTelegram = (io) => {
     return next();
   });
 
-  bot.start((ctx) => {
-    ctx.reply('Welcome to Pocket AI! I am your PC Remote Controller.\n\nCommands:\n/pair - Get code to connect your Laptop\nSend any message to control your PC.');
+  bot.start(async (ctx) => {
+    try {
+      console.log('🚀 Start command received!');
+      await ctx.reply('Welcome to Pocket AI! I am your PC Remote Controller.\n\nCommands:\n/pair - Get code to connect your Laptop\nSend any message to control your PC.');
+    } catch (err) {
+      console.error('❌ Error in /start command:', err);
+    }
   });
 
   // Help user pair their laptop easily
@@ -108,17 +113,31 @@ export const initializeTelegram = (io) => {
 
     try {
       // 1. Get/Create User
-      let user = await db.query.users.findFirst(); 
-      if (!user) {
-        console.log('📝 Creating default admin user...');
-        [user] = await db.insert(users).values({
-          email: 'admin@pocket-ai.local',
-          passwordHash: 'dummy',
-          name: 'Pocket AI Admin',
-        }).returning();
+      let user;
+      try {
+        user = await db.query.users.findFirst(); 
+      } catch (dbErr) {
+        console.error('❌ Database connection error:', dbErr);
+        return ctx.reply('⚠️ Database connection failed. Please check if your Neon DB is active.');
       }
 
-      // 2. Get history & online device
+      if (!user) {
+        console.log('📝 Creating default admin user...');
+        try {
+          [user] = await db.insert(users).values({
+            email: 'admin@pocket-ai.local',
+            passwordHash: 'dummy',
+            name: 'Pocket AI Admin',
+          }).returning();
+        } catch (insErr) {
+          console.error('❌ Failed to create user:', insErr);
+          return ctx.reply('❌ Failed to initialize user in database.');
+        }
+      }
+
+      // ... rest of the logic ...
+      // (I'll keep the rest as is but wrapped in the outer try-catch)
+      
       const history = await db.select().from(chatMessages)
         .where(eq(chatMessages.userId, user.id))
         .orderBy(desc(chatMessages.createdAt)).limit(10);
@@ -170,7 +189,7 @@ export const initializeTelegram = (io) => {
 
     } catch (error) {
       console.error('❌ Bot Processing Error:', error);
-      ctx.reply('Sorry, I encountered an error. Please check backend logs.');
+      ctx.reply(`❌ Error: ${error.message || 'Unknown processing error'}`);
     }
   });
 
