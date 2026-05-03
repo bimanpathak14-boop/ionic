@@ -72,6 +72,7 @@ router.post(
   async (req, res) => {
     try {
       const { pairingCode: code, deviceName, platform, type, btAddress, ipAddress } = req.body;
+      console.log(`🔍 Attempting to complete pairing. Code: ${code}, UserID: ${req.user.id}`);
 
       // Find valid pairing code
       const [pc] = await db
@@ -80,13 +81,18 @@ router.post(
         .where(
           and(
             eq(pairingCodes.code, code),
-            eq(pairingCodes.userId, req.user.id),
-            gt(pairingCodes.expiresAt, new Date())
+            eq(pairingCodes.userId, req.user.id)
           )
         )
         .limit(1);
 
-      if (!pc || pc.usedAt) {
+      console.log(`📊 Pairing code found:`, pc ? 'Yes' : 'No');
+      if (pc) {
+        console.log(`⏰ Expiry: ${pc.expiresAt}, Current Time: ${new Date()}, Used: ${!!pc.usedAt}`);
+      }
+
+      if (!pc || pc.usedAt || new Date(pc.expiresAt) < new Date()) {
+        console.log('❌ Pairing failed: Code invalid, used, or expired');
         return res.status(400).json({ error: 'Invalid or expired pairing code' });
       }
 
