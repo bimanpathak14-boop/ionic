@@ -21,51 +21,60 @@ from browser.browser_handler import BrowserHandler
 
 class PocketAIEngine:
     def __init__(self):
+        # Initialize single instances of handlers
+        word = WordHandler()
+        excel = ExcelHandler()
+        pptx = PowerPointHandler()
+        vscode = VSCodeHandler()
+        image = ImageHandler()
+        system = SystemHandler()
+        browser = BrowserHandler()
+
         self.handlers = {
             'office': {
-                'create_document': WordHandler().create,
-                'create_new_document': WordHandler().create, # Alias
-                'edit_document': WordHandler().edit,
-                'create_spreadsheet': ExcelHandler().create,
-                'create_presentation': PowerPointHandler().create,
-                'export_pdf': WordHandler().export_pdf,
-                'add_image_to_doc': WordHandler().add_image,
+                'create_document': word.create,
+                'create_new_document': word.create,
+                'edit_document': word.edit,
+                'create_spreadsheet': excel.create,
+                'create_presentation': pptx.create,
+                'export_pdf': word.export_pdf,
+                'add_image_to_doc': word.add_image,
             },
             'coding': {
-                'open_vscode': VSCodeHandler().open_vscode,
-                'create_project': VSCodeHandler().create_project,
-                'edit_file': VSCodeHandler().edit_file,
-                'create_file': VSCodeHandler().create_file,
-                'run_command': VSCodeHandler().run_command,
+                'open_vscode': vscode.open_vscode,
+                'create_project': vscode.create_project,
+                'edit_file': vscode.edit_file,
+                'create_file': vscode.create_file,
+                'run_command': vscode.run_command,
             },
             'creative': {
-                'generate_image': ImageHandler().generate,
-                'edit_image': ImageHandler().edit,
-                'resize_image': ImageHandler().resize,
-                'convert_image': ImageHandler().convert,
+                'generate_image': image.generate,
+                'edit_image': image.edit,
+                'resize_image': image.resize,
+                'convert_image': image.convert,
             },
             'system': {
-                'launch_app': SystemHandler().launch_app,
-                'launch_ms_word': lambda **kw: SystemHandler().launch_app(app_name='word'), # Alias
-                'open_ms_word': lambda **kw: SystemHandler().launch_app(app_name='word'), # Alias
-                'type_text': SystemHandler().type_text,
-                'type': SystemHandler().type_text, # Alias
-                'list_files': SystemHandler().list_files,
-                'create_folder': SystemHandler().create_folder,
-                'move_file': SystemHandler().move_file,
-                'delete_file': SystemHandler().delete_file,
-                'screenshot': SystemHandler().screenshot,
-                'media_control': SystemHandler().media_control,
-                'get_clipboard': SystemHandler().get_clipboard,
-                'set_clipboard': SystemHandler().set_clipboard,
-                'run_terminal': SystemHandler().run_terminal,
-                'cancel': SystemHandler().cancel_task,
-                'get_system_info': SystemHandler().get_system_info,
+                'launch_app': system.launch_app,
+                'launch_ms_word': lambda **kw: system.launch_app(app_name='word'),
+                'open_ms_word': lambda **kw: system.launch_app(app_name='word'),
+                'type_text': system.type_text,
+                'type': system.type_text,
+                'list_files': system.list_files,
+                'create_folder': system.create_folder,
+                'move_file': system.move_file,
+                'delete_file': system.delete_file,
+                'screenshot': system.screenshot,
+                'media_control': system.media_control,
+                'get_clipboard': system.get_clipboard,
+                'set_clipboard': system.set_clipboard,
+                'run_terminal': system.run_terminal,
+                'cancel': system.cancel_task,
+                'get_system_info': system.get_system_info,
             },
             'browser': {
-                'open_url': BrowserHandler().open_url,
-                'search': BrowserHandler().search,
-                'take_screenshot': BrowserHandler().take_screenshot,
+                'open_url': browser.open_url,
+                'search': browser.search,
+                'take_screenshot': browser.take_screenshot,
             },
         }
         self.running_tasks = {}

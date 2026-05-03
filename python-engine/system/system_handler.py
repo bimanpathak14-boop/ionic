@@ -21,9 +21,6 @@ class SystemHandler:
     def type_text(self, text='', interval=0.01, press_enter=True, app_hint=None, **kwargs):
         """Type text into the active window. Supports Unicode via clipboard on Windows."""
         try:
-            if not text:
-                return {'data': {'error': 'No text provided to type'}}
-
             print(f"DEBUG: Starting type_text. Length: {len(text)}, Hint: {app_hint}", file=sys.stderr)
             
             # If app hint is provided, try to launch it first
