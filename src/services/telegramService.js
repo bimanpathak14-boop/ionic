@@ -183,9 +183,9 @@ export const initializeTelegram = (io) => {
         taskStatusMsg = `\n\n⚠️ *No Device:* Laptop offline. Command queued.`;
       }
 
-      // 6. Reply
+      // 6. Reply (Using plain text for better stability with long AI responses)
       const safeResponse = filterSensitiveInfo(aiResult.response + taskStatusMsg);
-      await ctx.reply(safeResponse, { parse_mode: 'Markdown' });
+      await ctx.reply(safeResponse);
 
     } catch (error) {
       console.error('❌ Bot Processing Error:', error);

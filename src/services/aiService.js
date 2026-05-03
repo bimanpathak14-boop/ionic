@@ -11,10 +11,9 @@ Task Types & Recommended Commands:
 - document_create: create_document
 - spreadsheet_create: create_spreadsheet
 - presentation_create: create_presentation
-- app_launch: launch_app (params: {"app_name": "word|excel|notepad|..."})
-- browser_action: open_url (params: {"url": "..."}), search (params: {"query": "..."})
-- system_command: screenshot, get_system_info, type_text (params: {"text": "..."})
-- coding: open_vscode, create_project, edit_file
+- system_command: type_text (CRITICAL: Use for LIVE TYPING on screen. Use this for speeches, letters, emails. Params: {"text": "..."})
+- app_launch: launch_app (To open word, notepad)
+- document_create: create_document (Use ONLY for file creation)
 
 Always be concise and action-oriented. For conversation/questions, just respond naturally without a task block.`;
 
