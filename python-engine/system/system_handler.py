@@ -18,16 +18,65 @@ class SystemHandler:
         self.running_tasks = {}
         pyautogui.FAILSAFE = True
 
-    def type_text(self, text='', interval=0.05, press_enter=True, **kwargs):
-        """Type text into the active window"""
+    def type_text(self, text='', interval=0.01, press_enter=True, app_hint=None, **kwargs):
+        """Type text into the active window. Supports Unicode via clipboard on Windows."""
         try:
-            # Short delay to let user switch window if needed (though bot usually launches app first)
-            time.sleep(1) 
-            pyautogui.write(text, interval=interval)
+            if not text:
+                return {'data': {'error': 'No text provided to type'}}
+
+            print(f"DEBUG: Starting type_text. Length: {len(text)}, Hint: {app_hint}", file=sys.stderr)
+            
+            # If app hint is provided, try to launch it first
+            if app_hint:
+                print(f"DEBUG: Launching app hint: {app_hint}", file=sys.stderr)
+                self.launch_app(app_name=app_hint)
+                time.sleep(3) # Wait for app to open and take focus
+            else:
+                # Short delay to let user switch window if needed
+                time.sleep(1.5) 
+
+            # Check if text is mostly ASCII
+            is_ascii = all(ord(c) < 128 for c in text)
+
+            if platform.system() == 'Windows' and not is_ascii:
+                # Use clipboard for Unicode (Hindi, etc.) on Windows
+                try:
+                    import ctypes
+                    # Basic clipboard support using ctypes to avoid dependencies
+                    CF_UNICODETEXT = 13
+                    user32 = ctypes.windll.user32
+                    kernel32 = ctypes.windll.kernel32
+
+                    text_bytes = text.encode('utf-16le') + b'\x00\x00'
+                    h_mem = kernel32.GlobalAlloc(0x0042, len(text_bytes))
+                    p_mem = kernel32.GlobalLock(h_mem)
+                    ctypes.memmove(p_mem, text_bytes, len(text_bytes))
+                    kernel32.GlobalUnlock(h_mem)
+
+                    if user32.OpenClipboard(0):
+                        user32.EmptyClipboard()
+                        user32.SetClipboardData(CF_UNICODETEXT, h_mem)
+                        user32.CloseClipboard()
+                        
+                        # Paste using keyboard shortcut
+                        pyautogui.hotkey('ctrl', 'v')
+                        print("DEBUG: Typed via clipboard (Unicode)", file=sys.stderr)
+                    else:
+                        raise Exception("Could not open clipboard")
+                except Exception as clipboard_err:
+                    print(f"DEBUG: Clipboard failed: {clipboard_err}. Falling back to write.", file=sys.stderr)
+                    pyautogui.write(text, interval=interval)
+            else:
+                # Standard ASCII typing
+                pyautogui.write(text, interval=interval)
+                print("DEBUG: Typed via pyautogui.write", file=sys.stderr)
+
             if press_enter:
                 pyautogui.press('enter')
-            return {'data': {'message': 'Typing completed'}}
+            
+            return {'data': {'message': 'Typing completed successfully'}}
         except Exception as e:
+            print(f"DEBUG: Typing error: {str(e)}", file=sys.stderr)
             return {'data': {'error': f'Typing failed: {str(e)}'}}
 
     def launch_app(self, app_name='', path=None, **kwargs):
