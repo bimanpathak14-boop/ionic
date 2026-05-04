@@ -9,7 +9,49 @@ import crypto from 'crypto';
 
 const router = Router();
 
-// All device routes require authentication
+// ============ Public Pairing Verification (NO AUTH REQUIRED) ============
+// This allows a new desktop app to exchange a 6-digit code for a real token
+router.post('/pair/verify', async (req, res) => {
+  try {
+    const { pairingCode: code, deviceName, platform } = req.body;
+    
+    // Find valid pairing code
+    const [pc] = await db.select().from(pairingCodes)
+      .where(and(eq(pairingCodes.code, code), gt(pairingCodes.expiresAt, new Date())))
+      .limit(1);
+
+    if (!pc || pc.usedAt) {
+      return res.status(400).json({ error: 'Invalid or expired pairing code' });
+    }
+
+    // Mark code as used
+    await db.update(pairingCodes).set({ usedAt: new Date() }).where(eq(pairingCodes.id, pc.id));
+
+    // Create the device
+    const [device] = await db.insert(devices).values({
+      userId: pc.userId,
+      name: deviceName || 'New Desktop',
+      platform: platform || 'windows',
+      status: 'online',
+      pairedAt: new Date(),
+    }).returning();
+
+    // Generate a long-term token for this device
+    const jwt = (await import('jsonwebtoken')).default;
+    const token = jwt.sign(
+      { userId: pc.userId, deviceId: device.id },
+      process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me',
+      { expiresIn: '365d' } // 1 year session for desktop
+    );
+
+    res.json({ token, deviceId: device.id, serverUrl: process.env.SERVER_URL });
+  } catch (error) {
+    console.error('Verify pairing error:', error);
+    res.status(500).json({ error: 'Pairing failed' });
+  }
+});
+
+// All other device routes require authentication
 router.use(authenticate);
 
 // ============ QR Pairing: Initialize Session (Desktop Agent) ============

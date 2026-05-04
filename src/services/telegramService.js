@@ -93,11 +93,10 @@ export const initializeTelegram = (io) => {
 
       const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
       const message = `✨ *Laptop Connection Details*\n\n` +
-        `1. Open Desktop App on Laptop\n` +
-        `2. Ensure Server URL is: \`${serverUrl}\`\n\n` +
-        `*Auth Token:* (Copy & Paste this)\n\`${token}\`\n\n` +
-        `*Pairing Code:* \`${code}\`\n\n` +
-        `_Note: Code expires in 10 minutes._`;
+        `1. Open Pocket AI Desktop App\n` +
+        `2. Ensure Server URL is: \`${serverUrl}\`\n` +
+        `3. Enter this code: \`${code}\`\n\n` +
+        `_Note: Code expires in 10 minutes. Once paired, it will auto-connect forever._`;
 
       ctx.reply(message, { parse_mode: 'Markdown' });
     } catch (error) {
