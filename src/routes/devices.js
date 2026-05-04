@@ -9,55 +9,61 @@ import crypto from 'crypto';
 
 const router = Router();
 
-// ============ Public Pairing Verification (NO AUTH REQUIRED) ============
-// This allows a new desktop app to exchange a 6-digit code for a real token
-router.post('/pair/verify', async (req, res) => {
-  try {
-    const { pairingCode: code, deviceName, platform } = req.body;
-    
-    // Find the code regardless of expiry first to give better error messages
-    const [pc] = await db.select().from(pairingCodes)
-      .where(eq(pairingCodes.code, code))
-      .limit(1);
+// ============ AirDrop-style Discovery: Desktop says "I am here" ============
+const discoveryPool = new Map();
 
-    if (!pc) {
-      return res.status(400).json({ error: 'Pairing code not found. Please check the code.' });
-    }
-    
-    if (pc.usedAt) {
-      return res.status(400).json({ error: 'This pairing code has already been used.' });
-    }
+router.post('/pair/discovery-announce', async (req, res) => {
+  const { hostname, platform } = req.body;
+  const discoveryId = Math.random().toString(36).substring(7);
+  
+  // Register in discovery pool for 2 minutes
+  discoveryPool.set(discoveryId, { 
+    hostname, 
+    platform,
+    res,
+    timestamp: Date.now()
+  });
 
-    if (new Date(pc.expiresAt) < new Date()) {
-      return res.status(400).json({ error: 'Pairing code has expired. Please generate a new one.' });
-    }
+  // Cleanup after 2 mins
+  setTimeout(() => discoveryPool.delete(discoveryId), 120000);
+});
 
-    // Mark code as used
-    await db.update(pairingCodes).set({ usedAt: new Date() }).where(eq(pairingCodes.id, pc.id));
+router.get('/pair/discovery-list', authenticate, async (req, res) => {
+  const list = Array.from(discoveryPool.entries()).map(([id, data]) => ({
+    id,
+    hostname: data.hostname,
+    platform: data.platform
+  }));
+  res.json({ devices: list });
+});
 
-    // Create the device
-    const [device] = await db.insert(devices).values({
-      userId: pc.userId,
-      name: deviceName || 'New Desktop',
-      type: 'desktop', // Added missing required field
-      platform: (platform || 'windows').toLowerCase(),
-      status: 'online',
-      pairedAt: new Date(),
-    }).returning();
+router.post('/pair/discovery-confirm', authenticate, async (req, res) => {
+  const { discoveryId } = req.body;
+  const waiter = discoveryPool.get(discoveryId);
 
-    // Generate a long-term token for this device
-    const jwt = (await import('jsonwebtoken')).default;
-    const token = jwt.sign(
-      { userId: pc.userId, deviceId: device.id },
-      process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me',
-      { expiresIn: '365d' } // 1 year session for desktop
-    );
+  if (!waiter) return res.status(400).json({ error: 'Device no longer available' });
 
-    res.json({ token, deviceId: device.id, serverUrl: process.env.SERVER_URL });
-  } catch (error) {
-    console.error('Verify pairing error:', error);
-    res.status(500).json({ error: 'Pairing failed' });
-  }
+  // Create device
+  const [device] = await db.insert(devices).values({
+    userId: req.user.id,
+    name: waiter.hostname,
+    platform: waiter.platform || 'windows',
+    status: 'online',
+    pairedAt: new Date(),
+  }).returning();
+
+  const jwt = (await import('jsonwebtoken')).default;
+  const token = jwt.sign(
+    { userId: req.user.id, deviceId: device.id },
+    process.env.JWT_SECRET || 'pocket_ai_secret_key_123',
+    { expiresIn: '365d' }
+  );
+
+  // Tell the desktop it is paired
+  waiter.res.json({ token, deviceId: device.id, serverUrl: process.env.SERVER_URL });
+  discoveryPool.delete(discoveryId);
+  
+  res.json({ success: true, deviceName: waiter.hostname });
 });
 
 // All other device routes require authentication

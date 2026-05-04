@@ -65,43 +65,60 @@ export const initializeTelegram = (io) => {
     }
   });
 
-  // Help user pair their laptop easily
+  // Discovery-style Pairing (Zero-UI, Zero-Code)
   bot.command('pair', async (ctx) => {
     try {
-      // 1. Get/Create Admin User
-      let user = await db.query.users.findFirst();
-      if (!user) {
-        [user] = await db.insert(users).values({
-          email: 'admin@pocket-ai.local',
-          passwordHash: 'dummy',
-          name: 'Pocket AI Admin',
-        }).returning();
+      const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
+      const res = await fetch(`${serverUrl}/api/v1/devices/pair/discovery-list`, {
+        headers: { 'Authorization': `Bearer ${jwt.sign({ userId: 'temp' }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123')}` }
+      });
+      const data = await res.json();
+
+      if (!data.devices || data.devices.length === 0) {
+        return ctx.reply('🔍 *Searching for laptops...*\n\nNo laptops found. Make sure Pocket AI is running on your laptop.', { parse_mode: 'Markdown' });
       }
 
-      // 2. Generate Token (Fixed key to match auth middleware)
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me', { expiresIn: '30d' });
+      const keyboard = data.devices.map(d => ([{
+        text: `💻 Connect to ${d.hostname}`,
+        callback_data: `claim_${d.id}`
+      }]));
 
-      // 3. Generate Pairing Code
-      const code = crypto.randomInt(100000, 999999).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins
-
-      await db.insert(pairingCodes).values({
-        userId: user.id,
-        code,
-        expiresAt,
+      ctx.reply('🔍 *I found these laptops:*\nClick one to connect instantly!', {
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: keyboard }
       });
+    } catch (e) {
+      ctx.reply('❌ Error searching for devices.');
+    }
+  });
 
-      const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
-      const message = `✨ *Laptop Connection Details*\n\n` +
-        `1. Open Pocket AI Desktop App\n` +
-        `2. Ensure Server URL is: \`${serverUrl}\`\n` +
-        `3. Enter this code: \`${code}\`\n\n` +
-        `_Note: Code expires in 10 minutes. Once paired, it will auto-connect forever._`;
+  // Handle Button Clicks
+  bot.on('callback_query', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (data.startsWith('claim_')) {
+      const discoveryId = data.replace('claim_', '');
+      try {
+        // Get/Create User
+        let user = await db.query.users.findFirst() || (await db.insert(users).values({ email: 'admin@pocket-ai.local', passwordHash: 'dummy', name: 'Pocket AI Admin' }).returning())[0];
+        const jwtToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123', { expiresIn: '5m' });
+        
+        const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
+        const res = await fetch(`${serverUrl}/api/v1/devices/pair/discovery-confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+          body: JSON.stringify({ discoveryId }),
+        });
 
-      ctx.reply(message, { parse_mode: 'Markdown' });
-    } catch (error) {
-      console.error('Pair command error:', error);
-      ctx.reply('Failed to generate pairing details. Please check logs.');
+        const result = await res.json();
+        if (result.success) {
+          ctx.answerCbQuery('Connected!');
+          ctx.editMessageText(`✅ *Success!* Linked to *${result.deviceName}*.\nYou can now control it!`, { parse_mode: 'Markdown' });
+        } else {
+          ctx.answerCbQuery('Failed to connect.');
+        }
+      } catch (e) {
+        ctx.answerCbQuery('Error.');
+      }
     }
   });
 
