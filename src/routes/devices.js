@@ -15,13 +15,21 @@ router.post('/pair/verify', async (req, res) => {
   try {
     const { pairingCode: code, deviceName, platform } = req.body;
     
-    // Find valid pairing code
+    // Find the code regardless of expiry first to give better error messages
     const [pc] = await db.select().from(pairingCodes)
-      .where(and(eq(pairingCodes.code, code), gt(pairingCodes.expiresAt, new Date())))
+      .where(eq(pairingCodes.code, code))
       .limit(1);
 
-    if (!pc || pc.usedAt) {
-      return res.status(400).json({ error: 'Invalid or expired pairing code' });
+    if (!pc) {
+      return res.status(400).json({ error: 'Pairing code not found. Please check the code.' });
+    }
+    
+    if (pc.usedAt) {
+      return res.status(400).json({ error: 'This pairing code has already been used.' });
+    }
+
+    if (new Date(pc.expiresAt) < new Date()) {
+      return res.status(400).json({ error: 'Pairing code has expired. Please generate a new one.' });
     }
 
     // Mark code as used
