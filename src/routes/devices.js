@@ -31,7 +31,8 @@ router.post('/pair/verify', async (req, res) => {
     const [device] = await db.insert(devices).values({
       userId: pc.userId,
       name: deviceName || 'New Desktop',
-      platform: platform || 'windows',
+      type: 'desktop', // Added missing required field
+      platform: (platform || 'windows').toLowerCase(),
       status: 'online',
       pairedAt: new Date(),
     }).returning();
@@ -80,7 +81,7 @@ router.post('/pair/init', async (req, res) => {
 router.post('/pair/code', async (req, res) => {
   try {
     const code = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 60000); // 1 minute expiry
+    const expiresAt = new Date(Date.now() + 600000); // 10 minutes expiry (increased from 1m)
 
     const [pairingCode] = await db
       .insert(pairingCodes)
