@@ -52,10 +52,31 @@ class WordHandler:
                 if paragraph.strip():
                     doc.add_paragraph(paragraph.strip())
 
-        # Save
-        filename = self._safe_filename(title) + '.docx'
+        # Save with unique filename if busy
+        base_filename = self._safe_filename(title)
+        filename = base_filename + '.docx'
         filepath = os.path.join(self.output_dir, filename)
-        doc.save(filepath)
+        
+        counter = 1
+        while os.path.exists(filepath):
+            try:
+                # Try saving - if it works, the file exists but isn't locked by Word
+                # If it fails, it's either locked or we need a new name
+                doc.save(filepath)
+                break
+            except PermissionError:
+                filename = f"{base_filename}_{counter}.docx"
+                filepath = os.path.join(self.output_dir, filename)
+                counter += 1
+            except Exception as e:
+                # Fallback to a unique name if any other error
+                filename = f"{base_filename}_{datetime.now().strftime('%H%M%S')}.docx"
+                filepath = os.path.join(self.output_dir, filename)
+                doc.save(filepath)
+                break
+        else:
+            # File didn't exist yet
+            doc.save(filepath)
         
         # Open the file automatically on the laptop
         try:
@@ -88,8 +109,16 @@ class WordHandler:
                     self._replace_text(doc, op.get('find', ''), op.get('replace', ''))
                 elif op_type == 'add_image':
                     self._add_image(doc, op.get('image_path', ''), width=op.get('width', 6))
-
-        doc.save(path)
+        try:
+            doc.save(path)
+        except PermissionError:
+            # If original file is locked, save a copy
+            base, ext = os.path.splitext(path)
+            new_path = f"{base}_edited_{datetime.now().strftime('%H%M%S')}{ext}"
+            doc.save(new_path)
+            path = new_path
+        except Exception as e:
+            raise e
         
         # Open the file automatically
         try:
