@@ -13,7 +13,8 @@ export function initializeWebSocket(io) {
       const token = socket.handshake.auth?.token || socket.handshake.query?.token;
       if (!token) return next(new Error('Authentication required'));
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const jwtSecret = process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me';
+      const decoded = jwt.verify(token, jwtSecret);
       socket.userId = decoded.userId;
 
       // If connecting as a desktop agent, attach device info
@@ -21,10 +22,12 @@ export function initializeWebSocket(io) {
       if (deviceId) {
         socket.deviceId = deviceId;
         socket.isAgent = true;
+        console.log(`[WS] Agent Authed: device=${deviceId}`);
       }
 
       next();
     } catch (error) {
+      console.error('[WS] Auth Error:', error.message);
       next(new Error('Invalid token'));
     }
   });
