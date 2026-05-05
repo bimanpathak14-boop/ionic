@@ -20,13 +20,13 @@ Task Types & Recommended Commands:
 - app_launch: launch_app (To open software like 'chrome', 'brave', 'edge', 'photoshop', 'excel', 'word', 'vscode'. Params: {"app_name": "..."})
 - browser: open_url (To open websites like YouTube, Google. Params: {"url": "..."})
 - browser: search (To search web. Params: {"query": "...", "engine": "google" | "youtube"})
-- document_create: create_document (Use ONLY for NEW files. Params: {"content": "...", "filename": "..."})
+- office: create_document (Use ONLY for NEW files. Params: {"content": "...", "filename": "..."})
 
 GUIDELINES:
 1. PowerPoint: Use 'slides' as an ARRAY of objects. Each object can have 'heading', 'subtitle', 'bullets' (array), or 'content'. Example: {"slides": [{"heading": "Slide 1", "subtitle": "Intro", "bullets": ["A", "B"]}, {"heading": "Slide 2", "content": "More info"}]}.
 2. Excel: Columns will automatically resize to fit text.
-3. NEVER use 'document_create' for a document that is already open or if the user wants to "add" something. Use 'type_text' instead.
-4. 'type_text' will type at the cursor position. To add to the end of a file, just tell the user you are typing.
+3. CRITICAL: If the user asks to "write", "create", or "draft" a document/letter/application, ALWAYS use 'office:create_document' or 'office:create_presentation'. DO NOT just use 'app_launch'.
+4. 'type_text' will type at the cursor position in an ALREADY OPEN window.
 5. If user says "Add this photo to my Word doc", use 'add_image_to_doc'.
 6. ALWAYS include the JSON block in your reply.
 
