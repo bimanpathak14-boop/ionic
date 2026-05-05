@@ -74,34 +74,9 @@ class ExcelHandler:
         if headers:
             ws.auto_filter.ref = f'A1:{get_column_letter(len(headers))}{len(rows or []) + 1}'
 
-        # Save with unique filename if busy
-        base_filename = self._safe_filename(title)
-        filename = base_filename + '.xlsx'
+        filename = self._safe_filename(title) + '.xlsx'
         filepath = os.path.join(self.output_dir, filename)
-        
-        counter = 1
-        while os.path.exists(filepath):
-            try:
-                wb.save(filepath)
-                break
-            except PermissionError:
-                filename = f"{base_filename}_{counter}.xlsx"
-                filepath = os.path.join(self.output_dir, filename)
-                counter += 1
-            except Exception:
-                import datetime
-                filename = f"{base_filename}_{datetime.datetime.now().strftime('%H%M%S')}.xlsx"
-                filepath = os.path.join(self.output_dir, filename)
-                wb.save(filepath)
-                break
-        else:
-            wb.save(filepath)
-        
-        # Open the file automatically
-        try:
-            os.startfile(filepath)
-        except:
-            pass
+        wb.save(filepath)
 
         return {
             'data': {'message': f'Spreadsheet "{title}" created', 'path': filepath},

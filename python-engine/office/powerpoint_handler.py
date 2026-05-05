@@ -48,34 +48,9 @@ class PowerPointHandler:
             for slide_data in slides:
                 self._add_content_slide(prs, slide_data, colors)
 
-        # Save with unique filename if busy
-        base_filename = self._safe_filename(title)
-        filename = base_filename + '.pptx'
+        filename = self._safe_filename(title) + '.pptx'
         filepath = os.path.join(self.output_dir, filename)
-        
-        counter = 1
-        while os.path.exists(filepath):
-            try:
-                prs.save(filepath)
-                break
-            except PermissionError:
-                filename = f"{base_filename}_{counter}.pptx"
-                filepath = os.path.join(self.output_dir, filename)
-                counter += 1
-            except Exception:
-                import datetime
-                filename = f"{base_filename}_{datetime.datetime.now().strftime('%H%M%S')}.pptx"
-                filepath = os.path.join(self.output_dir, filename)
-                prs.save(filepath)
-                break
-        else:
-            prs.save(filepath)
-        
-        # Open the file automatically
-        try:
-            os.startfile(filepath)
-        except:
-            pass
+        prs.save(filepath)
 
         return {
             'data': {'message': f'Presentation "{title}" created with {len(slides or []) + 1} slides',
