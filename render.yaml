@@ -2,7 +2,7 @@ services:
   - type: web
     name: pocket-ai-backend
     runtime: node
-    rootDir: backend
+    rootDir: mobile/backend
     plan: free
     buildCommand: npm install
     startCommand: npm start
