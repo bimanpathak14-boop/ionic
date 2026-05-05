@@ -27,6 +27,9 @@ function filterSensitiveInfo(text) {
   return filteredText.trim();
 }
 
+// Prevent double-processing (Deduplication)
+const processedMessages = new Set();
+
 let bot;
 
 export const initializeTelegram = (io) => {
@@ -132,8 +135,16 @@ export const initializeTelegram = (io) => {
   });
 
   bot.on('text', async (ctx) => {
-    const userMessage = ctx.message.text;
+    const msgId = ctx.message.message_id;
     const telegramId = ctx.from.id.toString();
+    const userMessage = ctx.message.text;
+
+    // Deduplication check
+    const dedupKey = `${telegramId}:${msgId}`;
+    if (processedMessages.has(dedupKey)) return;
+    processedMessages.add(dedupKey);
+    setTimeout(() => processedMessages.delete(dedupKey), 60000); // Clear after 1 min
+
     console.log(`💬 Processing message: "${userMessage}" from ${telegramId}`);
 
     try {
