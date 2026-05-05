@@ -17,10 +17,14 @@ const SENSITIVE_PATTERNS = [
 
 function filterSensitiveInfo(text) {
   let filteredText = text;
+  // Remove technical JSON blocks that AI might leak
+  filteredText = filteredText.replace(/\{"task":.*?\}/g, '');
+  filteredText = filteredText.replace(/```json[\s\S]*?```/g, '');
+  
   SENSITIVE_PATTERNS.forEach(pattern => {
     filteredText = filteredText.replace(pattern, '[REDACTED]');
   });
-  return filteredText;
+  return filteredText.trim();
 }
 
 let bot;
@@ -164,7 +168,8 @@ export const initializeTelegram = (io) => {
         .orderBy(desc(chatMessages.createdAt)).limit(10);
 
       const device = await db.query.devices.findFirst({
-        where: and(eq(devices.userId, user.id), eq(devices.status, 'online'))
+        where: and(eq(devices.userId, user.id), eq(devices.status, 'online')),
+        orderBy: desc(devices.lastSeen) // Always pick the most recently active device
       });
 
       // 3. Process with AI
@@ -194,11 +199,14 @@ export const initializeTelegram = (io) => {
         }).returning();
 
         if (io) {
+          console.log(`📡 Dispatching command to device: ${device.id} (${device.name})`);
           io.to(`device:${device.id}`).emit('command:execute', {
-            taskId: createdTask.id, type: createdTask.type,
-            command: createdTask.command, params: createdTask.params,
+            taskId: createdTask.id, 
+            type: createdTask.type,
+            command: createdTask.command, 
+            params: createdTask.params,
           });
-          taskStatusMsg = `\n\n⚙️ *Command Sent:* ${aiResult.task.type} to ${device.name}`;
+          taskStatusMsg = `\n\n⚙️ *Command Sent:* ${aiResult.task.type}`;
         }
       } else if (aiResult.task && !device) {
         taskStatusMsg = `\n\n⚠️ *No Device:* Laptop offline. Command queued.`;

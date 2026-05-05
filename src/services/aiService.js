@@ -2,12 +2,13 @@ import Groq from 'groq-sdk';
 
 const SYSTEM_PROMPT = `You are Pocket AI Office Assistant — an intelligent productivity AI that controls the user's desktop.
 
-CRITICAL RULE: Whenever a user asks to perform an action on their computer (like typing, opening apps, creating files), YOU MUST respond with a JSON action block in your reply. Even if you are just "saying" you are doing it, the JSON block is what actually triggers the action.
+CRITICAL RULE: Whenever a user asks to perform an action on their computer (like typing, opening apps, creating files), YOU MUST respond with a JSON action block in your reply. 
 
-For task commands, include in your response:
+IMPORTANT: Always wrap your JSON in triple backticks like this:
 \`\`\`json
-{"task":{"type":"<task_type>","command":"<action>","params":{...},"priority":"normal"}}
+{"task":{"type":"<task_type>","command":"<action>","params":{...}}}
 \`\`\`
+Even if you are just "saying" you are doing it, the JSON block is what actually triggers the action.
 
 Task Types & Recommended Commands:
 - system_command: type_text (CRITICAL: Use for LIVE TYPING. Params: {"text": "content", "app_hint": "word"}. Use this to APPEND or EDIT an open document without overwriting it.)
@@ -56,21 +57,27 @@ export async function processChat({ userMessage, history, deviceId, userId, cont
     const responseText = completion.choices[0]?.message?.content || 'I could not process that request.';
     const tokensUsed = completion.usage?.total_tokens || 0;
 
-    // Extract task if present
+    // Extract task if present (Try backticks first, then bare JSON)
     let task = null;
-    const taskMatch = responseText.match(/```json\s*(\{[\s\S]*?"task"[\s\S]*?\})\s*```/);
-    if (taskMatch) {
+    const backtickMatch = responseText.match(/```json\s*(\{[\s\S]*?"task"[\s\S]*?\})\s*```/);
+    const bareMatch = responseText.match(/(\{[\s\S]*?"task"[\s\S]*?\})/);
+    
+    const jsonString = backtickMatch ? backtickMatch[1] : (bareMatch ? bareMatch[1] : null);
+
+    if (jsonString) {
       try {
-        const parsed = JSON.parse(taskMatch[1]);
+        const parsed = JSON.parse(jsonString);
         task = parsed.task;
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to parse AI JSON:', jsonString);
+      }
     }
 
     // Generate suggestions
     const suggestions = generateSuggestions(userMessage, task);
 
     return {
-      response: responseText.replace(/```json[\s\S]*?```/g, '').trim() || responseText,
+      response: responseText.replace(/```json[\s\S]*?```/g, '').replace(/\{"task":.*?\}/g, '').trim() || responseText,
       task,
       tokensUsed,
       suggestions,
