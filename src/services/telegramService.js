@@ -65,12 +65,16 @@ export const initializeTelegram = (io) => {
     }
   });
 
-  // Discovery-style Pairing (Zero-UI, Zero-Code)
   bot.command('pair', async (ctx) => {
     try {
+      // 1. Get/Create a real user first to ensure auth passes
+      let user = await db.query.users.findFirst() || (await db.insert(users).values({ email: 'admin@pocket-ai.local', passwordHash: 'dummy', name: 'Pocket AI Admin' }).returning())[0];
+      
       const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
+      const jwtSecret = process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me';
+      
       const res = await fetch(`${serverUrl}/api/v1/devices/pair/discovery-list`, {
-        headers: { 'Authorization': `Bearer ${jwt.sign({ userId: 'temp' }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123')}` }
+        headers: { 'Authorization': `Bearer ${jwt.sign({ userId: user.id }, jwtSecret)}` }
       });
       const data = await res.json();
 
@@ -100,7 +104,8 @@ export const initializeTelegram = (io) => {
       try {
         // Get/Create User
         let user = await db.query.users.findFirst() || (await db.insert(users).values({ email: 'admin@pocket-ai.local', passwordHash: 'dummy', name: 'Pocket AI Admin' }).returning())[0];
-        const jwtToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'pocket_ai_secret_key_123', { expiresIn: '5m' });
+        const jwtSecret = process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me';
+        const jwtToken = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '5m' });
         
         const serverUrl = process.env.RENDER_EXTERNAL_URL || 'https://ionic-04b0.onrender.com';
         const res = await fetch(`${serverUrl}/api/v1/devices/pair/discovery-confirm`, {

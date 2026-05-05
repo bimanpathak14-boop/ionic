@@ -55,7 +55,7 @@ router.post('/pair/discovery-confirm', authenticate, async (req, res) => {
   const jwt = (await import('jsonwebtoken')).default;
   const token = jwt.sign(
     { userId: req.user.id, deviceId: device.id },
-    process.env.JWT_SECRET || 'pocket_ai_secret_key_123',
+    process.env.JWT_SECRET || 'pocket_ai_secret_key_123_change_me',
     { expiresIn: '365d' }
   );
 
