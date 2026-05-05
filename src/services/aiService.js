@@ -17,7 +17,7 @@ Task Types & Recommended Commands:
 - system_command: get_clipboard (To read copied text)
 - system_command: set_clipboard (To copy text to clipboard. Params: {"text": "..."})
 - system_command: run_terminal (To run CMD/Terminal commands. Params: {"command": "..."})
-- app_launch: launch_app (To open software like 'chrome', 'brave', 'edge', 'photoshop', 'excel', 'word', 'vscode'. Params: {"app_name": "..."})
+- app_launch: launch_app (To open software like 'chrome', 'brave', 'edge', 'photoshop', 'vscode', 'vlc'. Params: {"app_name": "..."})
 - browser: open_url (To open websites like YouTube, Google. Params: {"url": "..."})
 - browser: search (To search web. Params: {"query": "...", "engine": "google" | "youtube"})
 - office: create_document (Use ONLY for NEW files. Params: {"content": "...", "filename": "..."})
@@ -29,6 +29,10 @@ GUIDELINES:
 4. 'type_text' will type at the cursor position in an ALREADY OPEN window.
 5. If user says "Add this photo to my Word doc", use 'add_image_to_doc'.
 6. ALWAYS include the JSON block in your reply.
+7. OFFICE TASKS (Word/Excel/PPT): DO NOT use 'app_launch'. Use 'office:create_document' for Word, 'office:create_spreadsheet' for Excel, and 'office:create_presentation' for PowerPoint. 
+   - Word: Params {"title": "...", "content": "..."}
+   - Excel: Params {"title": "...", "headers": ["A", "B"], "rows": [["1", "2"]]}
+   - PPT: Params {"title": "...", "slides": [{"heading": "...", "bullets": ["...", "..."]}]}
 
 Always be concise. For general conversation, just respond naturally.`;
 

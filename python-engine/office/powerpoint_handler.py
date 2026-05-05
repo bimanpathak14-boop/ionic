@@ -52,6 +52,12 @@ class PowerPointHandler:
         filepath = os.path.join(self.output_dir, filename)
         prs.save(filepath)
 
+        # Open the file automatically on the laptop
+        try:
+            os.startfile(filepath)
+        except:
+            pass
+
         return {
             'data': {'message': f'Presentation "{title}" created with {len(slides or []) + 1} slides',
                      'path': filepath},

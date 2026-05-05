@@ -77,6 +77,12 @@ class ExcelHandler:
         filename = self._safe_filename(title) + '.xlsx'
         filepath = os.path.join(self.output_dir, filename)
         wb.save(filepath)
+        
+        # Open the file automatically on the laptop
+        try:
+            os.startfile(filepath)
+        except:
+            pass
 
         return {
             'data': {'message': f'Spreadsheet "{title}" created', 'path': filepath},
